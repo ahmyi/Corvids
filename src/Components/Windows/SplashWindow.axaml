@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Corvids.SplashWindow"
+        Width="440" Height="300"
+        SystemDecorations="None" CanResize="False" ShowInTaskbar="False"
+        Topmost="True" WindowStartupLocation="CenterScreen"
+        Background="Transparent" TransparencyLevelHint="Transparent">
+
+  <Border CornerRadius="14" BorderThickness="1" BorderBrush="#1C2740" ClipToBounds="True">
+    <Border.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#172034" />
+        <GradientStop Offset="1" Color="#05070E" />
+      </LinearGradientBrush>
+    </Border.Background>
+
+    <Grid RowDefinitions="*,Auto">
+      <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6" Margin="24,26,24,10">
+        <Image Source="/Assets/icon.png" Width="132" Height="132" HorizontalAlignment="Center" />
+        <TextBlock Text="Corvids" FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center"
+                   Foreground="#F2F4F8" />
+        <TextBlock Text="A horde for the Nodes" FontSize="13" HorizontalAlignment="Center"
+                   Foreground="#8FA0C0" FontStyle="Italic" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Margin="24,0,24,16" Spacing="6">
+        <ProgressBar x:Name="Progress" IsIndeterminate="True" Height="3" Background="Transparent"
+                     Foreground="#4ADE80" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock x:Name="StatusLabel" Text="Starting…" Opacity="0.5" FontSize="11"
+                     VerticalAlignment="Center" Foreground="#C9D2E4" />
+          <TextBlock x:Name="VersionLabel" Grid.Column="1" Opacity="0.4" FontSize="11"
+                     VerticalAlignment="Center" Foreground="#C9D2E4" />
+        </Grid>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

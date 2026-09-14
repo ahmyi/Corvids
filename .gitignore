@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+dist/
+
+# IDE / tooling
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db

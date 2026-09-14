@@ -1,0 +1,44 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Corvids.SettingsDialog"
+        Title="Settings"
+        Width="560" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <StackPanel Margin="20" Spacing="16">
+
+    <CheckBox x:Name="RunAtStartupBox" />
+
+    <CheckBox x:Name="StartMinimizedBox" Content="Start minimized to the tray"
+              ToolTip.Tip="The window stays hidden after launch; apps flagged auto-start still start." />
+
+    <StackPanel Spacing="4">
+      <TextBlock x:Name="AppsFileLabel" Text="Apps config file" Opacity="0.7" />
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBox x:Name="AppsFileBox" FontFamily="{StaticResource MonoFont}" />
+        <Button Grid.Column="1" Content="Browse..." Margin="6,0,0,0" Click="Browse_Click" />
+        <Button Grid.Column="2" Content="Open folder" Margin="6,0,0,0" Click="OpenFolder_Click" />
+      </Grid>
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock x:Name="TerminalLabel" Text="Terminal command (optional)" Opacity="0.7" />
+      <TextBox x:Name="TerminalBox" FontFamily="{StaticResource MonoFont}"
+               Watermark="{} {dir} is replaced with the app folder" />
+    </StackPanel>
+
+    <TextBlock x:Name="ErrorText" Foreground="#F87171" IsVisible="False" TextWrapping="Wrap" />
+
+    <DockPanel>
+      <Button DockPanel.Dock="Left" Content="About" Click="About_Click" MinWidth="90"
+              HorizontalContentAlignment="Center" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Content="Cancel" Click="Cancel_Click" MinWidth="90" HorizontalContentAlignment="Center"
+                IsCancel="True" />
+        <Button Content="Save" Classes="accent" Click="Save_Click" MinWidth="90"
+                HorizontalContentAlignment="Center" IsDefault="True" />
+      </StackPanel>
+    </DockPanel>
+
+  </StackPanel>
+</Window>

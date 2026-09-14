@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Corvids.ExitDialog"
+        Title="Close Corvids"
+        Width="460" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <StackPanel Margin="20" Spacing="16">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" />
+    <TextBlock Text="Keep running in the tray leaves every app running and hides this window. Click the tray icon to bring it back."
+               FontSize="12" Opacity="0.6" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Click="Cancel_Click" MinWidth="90" HorizontalContentAlignment="Center" IsCancel="True" />
+      <Button Content="Stop all and exit" Click="Exit_Click" MinWidth="120" HorizontalContentAlignment="Center" />
+      <Button Content="Keep running in tray" Classes="accent" Click="Tray_Click" MinWidth="150"
+              HorizontalContentAlignment="Center" IsDefault="True" />
+    </StackPanel>
+  </StackPanel>
+</Window>

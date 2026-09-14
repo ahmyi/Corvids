@@ -1,0 +1,42 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Corvids.App"
+             RequestedThemeVariant="Dark">
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="Button.toolbar">
+      <Setter Property="Margin" Value="0,0,6,0" />
+      <Setter Property="Padding" Value="10,5" />
+    </Style>
+    <Style Selector="Border.separator">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="4,4,10,4" />
+      <Setter Property="Background" Value="{DynamicResource DividerBrush}" />
+    </Style>
+  </Application.Styles>
+
+  <Application.Resources>
+    <SolidColorBrush x:Key="SidebarBrush" Color="#252526" />
+    <SolidColorBrush x:Key="LogBrush" Color="#1B1B1C" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#3C3C3C" />
+    <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace</FontFamily>
+  </Application.Resources>
+
+  <!-- System tray icon: lets the window hide while apps keep running -->
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="/Assets/tray.png" ToolTipText="Corvids" Clicked="Tray_Clicked">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Show Corvids" Click="TrayShow_Click" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="Stop all and exit" Click="TrayExit_Click" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+
+</Application>

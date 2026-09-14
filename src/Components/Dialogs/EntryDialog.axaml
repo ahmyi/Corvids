@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Corvids.EntryDialog"
+        Title="App"
+        Width="560" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <StackPanel Margin="20" Spacing="12">
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Name" Opacity="0.7" />
+      <TextBox x:Name="NameBox" Watermark="e.g. API server" />
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Project folder" Opacity="0.7" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox x:Name="DirectoryBox" Watermark="Folder that contains package.json"
+                 LostFocus="DirectoryBox_LostFocus" />
+        <Button Grid.Column="1" Content="Browse..." Margin="6,0,0,0" Click="Browse_Click" />
+      </Grid>
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Command" Opacity="0.7" />
+      <TextBox x:Name="CommandBox" Watermark="e.g. npm run dev" FontFamily="{StaticResource MonoFont}" />
+      <StackPanel x:Name="SuggestionsPanel" IsVisible="False" Spacing="4">
+        <TextBlock Text="Scripts found in package.json (click to use):" FontSize="11" Opacity="0.6" />
+        <ListBox x:Name="SuggestionsList" MaxHeight="150" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                 SelectionChanged="SuggestionsList_SelectionChanged">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="10,4" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+        </ListBox>
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel x:Name="ShellPanel" Spacing="4">
+      <TextBlock Text="Run with" Opacity="0.7" />
+      <ComboBox x:Name="ShellBox" HorizontalAlignment="Stretch" />
+      <TextBlock x:Name="ShellHint" FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+      <StackPanel x:Name="CustomShellPanel" IsVisible="False" Spacing="4">
+        <TextBox x:Name="CustomShellBox" FontFamily="{StaticResource MonoFont}"
+                 Watermark="C:\msys64\usr\bin\bash.exe -lc &quot;{cmd}&quot;" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Environment variables (optional, one KEY=VALUE per line)" Opacity="0.7" />
+      <TextBox x:Name="EnvironmentBox" AcceptsReturn="True" MinHeight="60" MaxHeight="140"
+               FontFamily="{StaticResource MonoFont}" Watermark="NODE_ENV=production&#10;PORT=3000" />
+    </StackPanel>
+
+    <StackPanel Spacing="6">
+      <CheckBox x:Name="AutoStartBox" Content="Start automatically when Corvids opens" />
+      <CheckBox x:Name="AutoRestartBox" Content="Restart automatically if it crashes (5 s delay, max 10 per 10 min)" />
+    </StackPanel>
+
+    <TextBlock x:Name="ErrorText" Foreground="#F87171" IsVisible="False" TextWrapping="Wrap" />
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Click="Cancel_Click" MinWidth="90" HorizontalContentAlignment="Center" />
+      <Button x:Name="SaveButton" Content="Save" Classes="accent" Click="Save_Click" MinWidth="90"
+              HorizontalContentAlignment="Center" IsDefault="True" />
+    </StackPanel>
+
+  </StackPanel>
+</Window>
