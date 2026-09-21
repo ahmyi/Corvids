@@ -33,6 +33,31 @@ public partial class SettingsDialog : Window
             : "Empty uses your desktop's default terminal.";
         ToolTip.SetTip(TerminalLabel, terminalTip);
         ToolTip.SetTip(TerminalBox, terminalTip);
+
+        TimestampBox.Text = current.TimestampFormat;
+        TimestampLegend.Text = BuildLegend();
+        TimestampBox.TextChanged += (_, _) => UpdateTimestampPreview();
+        UpdateTimestampPreview();
+    }
+
+    private void UpdateTimestampPreview()
+    {
+        var pattern = string.IsNullOrWhiteSpace(TimestampBox.Text) ? TimeFormat.Default : TimestampBox.Text;
+        TimestampPreview.Text = TimeFormat.Format(DateTime.Now, pattern);
+    }
+
+    /// <summary>Lays the date-time keys out three per line, monospace-aligned.</summary>
+    private static string BuildLegend()
+    {
+        var sb = new System.Text.StringBuilder();
+        var i = 0;
+        foreach (var (token, meaning) in TimeFormat.Legend)
+        {
+            sb.Append($"{token} {meaning}".PadRight(14));
+            if (++i % 5 == 0) sb.Append('\n');
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     private async void Browse_Click(object? sender, RoutedEventArgs e)
@@ -91,6 +116,7 @@ public partial class SettingsDialog : Window
             StartMinimized = StartMinimizedBox.IsChecked == true,
             AppsFilePath = isDefault ? null : Path.GetFullPath(appsFile!),
             TerminalCommand = string.IsNullOrWhiteSpace(TerminalBox.Text) ? null : TerminalBox.Text.Trim(),
+            TimestampFormat = string.IsNullOrWhiteSpace(TimestampBox.Text) ? null : TimestampBox.Text.Trim(),
         });
     }
 

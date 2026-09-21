@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="Corvids.EntryDialog"
+        x:Class="Corvids.EntryDialog" Icon="/Assets/icon.png"
         Title="App"
         Width="560" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterOwner">
@@ -36,6 +36,12 @@
           </ListBox.Styles>
         </ListBox>
       </StackPanel>
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Update command (optional)" Opacity="0.7" />
+      <TextBox x:Name="UpdateCommandBox" Watermark="e.g. npm install (default), or git pull &amp;&amp; npm install"
+               FontFamily="{StaticResource MonoFont}" />
     </StackPanel>
 
     <StackPanel x:Name="ShellPanel" Spacing="4">

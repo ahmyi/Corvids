@@ -47,7 +47,8 @@ actually stops it.
 - "Run with" picker per app: Windows: Git Bash (default when installed, so nvm in your `.bashrc` works),
   cmd.exe, PowerShell, WSL or a custom shell. macOS/Linux: your login shell, bash, zsh, pwsh or custom
 - Close the window and choose: keep everything running in the system tray, or stop all and exit
-- Settings: run at sign-in, start minimized to the tray, where the config file lives, and a terminal command
+- Settings: run at sign-in, start minimized to the tray, where the config file lives, a terminal command, and
+  the log timestamp format (strftime-style tokens with a legend and live preview)
 - A splash screen with the logo, motto and version on launch; Settings ▸ About reopens it (click to close)
 - The config file is plain JSON and is watched: edit it in any editor and Corvids applies the change live
 

@@ -17,4 +17,7 @@ public class AppSettings
     /// working directory. Null uses the platform default (Windows Terminal / Git Bash / cmd, Terminal.app, etc.).
     /// </summary>
     public string? TerminalCommand { get; set; }
+
+    /// <summary>strftime-style pattern for log timestamps (e.g. "%y-%m-%d %H:%M:%S"). Null uses the default.</summary>
+    public string? TimestampFormat { get; set; }
 }

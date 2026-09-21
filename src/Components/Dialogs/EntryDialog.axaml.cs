@@ -30,6 +30,7 @@ public partial class EntryDialog : Window
             NameBox.Text = existing.Name;
             DirectoryBox.Text = existing.WorkingDirectory;
             CommandBox.Text = existing.Command;
+            UpdateCommandBox.Text = existing.UpdateCommand;
             AutoStartBox.IsChecked = existing.AutoStart;
             AutoRestartBox.IsChecked = existing.AutoRestart;
             EnvironmentBox.Text = existing.Environment;
@@ -130,6 +131,7 @@ public partial class EntryDialog : Window
             Name = name,
             WorkingDirectory = directory,
             Command = command,
+            UpdateCommand = string.IsNullOrWhiteSpace(UpdateCommandBox.Text) ? null : UpdateCommandBox.Text.Trim(),
             AutoStart = AutoStartBox.IsChecked == true,
             AutoRestart = AutoRestartBox.IsChecked == true,
             Environment = string.IsNullOrWhiteSpace(EnvironmentBox.Text) ? null : EnvironmentBox.Text.Trim(),

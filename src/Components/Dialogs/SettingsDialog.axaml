@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Corvids.SettingsDialog"
-        Title="Settings"
+        Title="Settings" Icon="/Assets/icon.png"
         Width="560" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterOwner">
 
@@ -25,6 +25,20 @@
       <TextBlock x:Name="TerminalLabel" Text="Terminal command (optional)" Opacity="0.7" />
       <TextBox x:Name="TerminalBox" FontFamily="{StaticResource MonoFont}"
                Watermark="{} {dir} is replaced with the app folder" />
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Log timestamp format" Opacity="0.7" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox x:Name="TimestampBox" FontFamily="{StaticResource MonoFont}"
+                 Watermark="%y-%m-%d %H:%M:%S" />
+        <TextBlock Grid.Column="1" x:Name="TimestampPreview" VerticalAlignment="Center" Margin="10,0,0,0"
+                   FontFamily="{StaticResource MonoFont}" Opacity="0.8" />
+      </Grid>
+      <TextBlock Text="Key for Date Time Input" FontSize="11" Opacity="0.55" Margin="0,2,0,0" />
+      <Border Background="{DynamicResource LogBrush}" CornerRadius="4" Padding="10,8">
+        <TextBlock x:Name="TimestampLegend" FontFamily="{StaticResource MonoFont}" FontSize="11" Opacity="0.75" />
+      </Border>
     </StackPanel>
 
     <TextBlock x:Name="ErrorText" Foreground="#F87171" IsVisible="False" TextWrapping="Wrap" />

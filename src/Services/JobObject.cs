@@ -41,6 +41,38 @@ public sealed class JobObject : IDisposable
     public bool Assign(Process process) =>
         _handle != IntPtr.Zero && AssignProcessToJobObject(_handle, process.Handle);
 
+    private const int JobObjectBasicProcessIdList = 3;
+
+    /// <summary>PIDs currently in the job (the app process and everything it spawned).</summary>
+    public IReadOnlyList<int> GetProcessIds()
+    {
+        var pids = new List<int>();
+        if (_handle == IntPtr.Zero) return pids;
+
+        const int capacity = 1024;
+        var size = 8 + IntPtr.Size * capacity; // two uints + ULONG_PTR[capacity]
+        var buffer = Marshal.AllocHGlobal(size);
+        try
+        {
+            if (QueryInformationJobObject(_handle, JobObjectBasicProcessIdList, buffer, size, out _))
+            {
+                var count = Marshal.ReadInt32(buffer, 4); // NumberOfProcessIdsInList
+                for (var i = 0; i < count && i < capacity; i++)
+                    pids.Add((int)Marshal.ReadIntPtr(buffer, 8 + i * IntPtr.Size));
+            }
+        }
+        catch
+        {
+            // best effort
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+
+        return pids;
+    }
+
     public void Terminate()
     {
         if (_handle != IntPtr.Zero) TerminateJobObject(_handle, 1);
@@ -100,6 +132,11 @@ public sealed class JobObject : IDisposable
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryInformationJobObject(IntPtr job, int infoClass, IntPtr info, int length,
+        out int returnLength);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

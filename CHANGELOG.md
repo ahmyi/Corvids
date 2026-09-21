@@ -4,11 +4,26 @@ All notable changes to Corvids are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0]
 
-Nothing yet.
+### Added
 
-## [1.0.0] - 2026-09-15
+- A port indicator on the sidebar dot and the status bar: green when the app is listening, blue when it is
+  running with no port, gray while checking or stopped. All running apps are monitored continuously by a
+  single serialized scan (one OS query per pass, so no overlapping checks), not only on click.
+- A bottom status bar showing how many apps are registered and running, plus the selected app's port.
+- An "Update" button (toolbar and right-click) that runs the app's update command in its folder, with a new
+  per-app "Update command" field in Add/Edit (default: `npm install`).
+- A configurable log timestamp format in Settings, using strftime-style keys (`%Y %m %d %H %M %S` …) with a
+  "Key for Date Time Input" legend and a live preview. A lone or unknown `%` renders as a literal percent.
+- The app icon now shows in the title bar of every window and dialog, in the taskbar, and on the executable.
+
+### Changed
+
+- Log timestamps now show the date as well as the time (`yy-MM-dd HH:mm:ss`) instead of time only.
+- Added breathing room below the last log line so it is not flush against the window edge.
+
+## [1.0.0]
 
 First release. Corvids is a cross-platform desktop manager for Node.js apps, built with C# and Avalonia.
 
@@ -45,5 +60,5 @@ First release. Corvids is a cross-platform desktop manager for Node.js apps, bui
 
 - Released under the GNU General Public License v3.0 or later.
 
-[Unreleased]: https://github.com/ahmyi/Corvids/compare/v1.0.0...HEAD
+[1.1.0]: https://github.com/ahmyi/Corvids/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ahmyi/Corvids/releases/tag/v1.0.0

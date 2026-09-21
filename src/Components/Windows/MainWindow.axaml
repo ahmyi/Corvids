@@ -6,7 +6,24 @@
         Width="1180" Height="720" MinWidth="760" MinHeight="440"
         WindowStartupLocation="CenterScreen">
 
-  <Grid ColumnDefinitions="260,4,*">
+  <DockPanel>
+
+    <!-- Status bar (bottom) -->
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource SidebarBrush}"
+            BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,4">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding StatusSummary}" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                    IsVisible="{Binding SelectedApp, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Text="{Binding SelectedApp.PortText}" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+          <Ellipse Width="9" Height="9" VerticalAlignment="Center"
+                   Classes.checking="{Binding SelectedApp.Port, Converter={x:Static local:Converters.PortStateToChecking}}"
+                   Fill="{Binding SelectedApp.Port, Converter={x:Static local:Converters.PortStateToBrush}}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="260,4,*">
 
     <!-- Sidebar: registered apps -->
     <DockPanel Grid.Column="0" Background="{DynamicResource SidebarBrush}">
@@ -40,6 +57,7 @@
             <MenuItem Header="Start" Click="Start_Click" IsEnabled="{Binding !SelectedApp.IsRunning}" />
             <MenuItem Header="Stop" Click="Stop_Click" IsEnabled="{Binding SelectedApp.IsRunning}" />
             <MenuItem Header="Restart" Click="Restart_Click" IsEnabled="{Binding SelectedApp.IsRunning}" />
+            <MenuItem Header="Update" Click="Update_Click" IsEnabled="{Binding !SelectedApp.IsUpdating}" />
             <MenuItem Header="Kill node" Click="KillNode_Click" />
             <Separator />
             <MenuItem Header="Open folder" Click="OpenFolder_Click" />
@@ -57,7 +75,8 @@
           <DataTemplate>
             <Grid ColumnDefinitions="Auto,*">
               <Ellipse Width="9" Height="9" Margin="0,0,10,0" VerticalAlignment="Center"
-                       Fill="{Binding Status, Converter={x:Static local:Converters.StatusToBrush}}" />
+                       Classes.checking="{Binding Port, Converter={x:Static local:Converters.PortStateToChecking}}"
+                       Fill="{Binding Port, Converter={x:Static local:Converters.PortStateToBrush}}" />
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding WorkingDirectory}" FontSize="11" Opacity="0.6"
@@ -115,6 +134,9 @@
         <Button Classes="toolbar" Content="Stop" Click="Stop_Click" IsEnabled="{Binding SelectedApp.IsRunning}" />
         <Button Classes="toolbar" Content="Restart" Click="Restart_Click"
                 IsEnabled="{Binding SelectedApp.IsRunning}" />
+        <Button Classes="toolbar" Content="Update" Click="Update_Click"
+                IsEnabled="{Binding !SelectedApp.IsUpdating}"
+                ToolTip.Tip="Run the app's update command in its folder (default: npm install)" />
         <Button Classes="toolbar" Content="Kill node" Click="KillNode_Click"
                 ToolTip.Tip="Stop this app and kill any other node process in its folder or on its port" />
         <Border Classes="separator" />
@@ -127,7 +149,7 @@
 
       <ListBox x:Name="LogList" Grid.Row="3" ItemsSource="{Binding SelectedApp.Lines}"
                SelectionMode="Multiple" Background="{DynamicResource LogBrush}"
-               FontFamily="{StaticResource MonoFont}" FontSize="12"
+               FontFamily="{StaticResource MonoFont}" FontSize="12" Padding="0,2,0,12"
                ScrollViewer.HorizontalScrollBarVisibility="{Binding LogHorizontalScroll}">
         <ListBox.Styles>
           <Style Selector="ListBoxItem">
@@ -147,5 +169,6 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </Grid>
-  </Grid>
+    </Grid>
+  </DockPanel>
 </Window>

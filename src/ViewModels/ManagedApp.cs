@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Avalonia.Threading;
+using Corvids;
 using Corvids.Models;
 using Corvids.Services;
 
@@ -69,6 +70,42 @@ public partial class ManagedApp : INotifyPropertyChanged
     }
 
     public bool IsRunning => Status is AppStatus.Starting or AppStatus.Running;
+
+    private PortState _port = PortState.Stopped;
+    private string _portText = "stopped";
+
+    /// <summary>Port indicator, kept current by the background monitor: green (open), blue (none), gray (checking/stopped).</summary>
+    public PortState Port
+    {
+        get => _port;
+        private set { if (_port == value) return; _port = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Human-readable port text, e.g. "port 3000", "no port", "checking…", "stopped".</summary>
+    public string PortText
+    {
+        get => _portText;
+        private set { if (_portText == value) return; _portText = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Called by the monitor with the freshly scanned ports for this app.</summary>
+    public void SetPorts(IReadOnlyList<int> ports)
+    {
+        if (!IsRunning) { Port = PortState.Stopped; PortText = "stopped"; return; }
+        if (ports.Count == 0) { Port = PortState.NoPort; PortText = "no port"; return; }
+        Port = PortState.Open;
+        PortText = ports.Count == 1 ? $"port {ports[0]}" : "ports " + string.Join(", ", ports);
+    }
+
+    /// <summary>PIDs owned by this app: the whole job tree on Windows, otherwise the root process.</summary>
+    public IReadOnlyCollection<int> ProcessIds
+    {
+        get
+        {
+            if (_job?.GetProcessIds() is { Count: > 0 } jobPids) return jobPids;
+            return _process is { HasExited: false } p ? new[] { p.Id } : Array.Empty<int>();
+        }
+    }
 
     public int? Pid
     {
@@ -167,6 +204,8 @@ public partial class ManagedApp : INotifyPropertyChanged
         Pid = process.Id;
         StartedAt = DateTime.Now;
         Status = AppStatus.Running;
+        Port = PortState.Checking; // gray pulse until the next monitor scan resolves it
+        PortText = "checking…";
         _flushTimer.Start();
     }
 
@@ -187,6 +226,67 @@ public partial class ManagedApp : INotifyPropertyChanged
         {
             AppendSystem($"Stop failed: {ex.Message}");
         }
+    }
+
+    private Process? _updateProcess;
+
+    /// <summary>True while the update command is running (disables the Update button).</summary>
+    public bool IsUpdating => _updateProcess is not null;
+
+    /// <summary>Runs the entry's update command (default "npm install") in the app folder, logging its output.</summary>
+    public void RunUpdate()
+    {
+        if (_updateProcess is not null) { AppendSystem("Update is already running."); return; }
+        if (!Directory.Exists(Entry.WorkingDirectory))
+        {
+            AppendSystem($"Working directory not found: {Entry.WorkingDirectory}");
+            return;
+        }
+
+        var command = string.IsNullOrWhiteSpace(Entry.UpdateCommand) ? AppEntry.DefaultUpdateCommand : Entry.UpdateCommand;
+        var process = new Process
+        {
+            StartInfo = Shell.ForCommand(command, Entry.WorkingDirectory, Entry.Shell, Entry.CustomShell,
+                out var shellLabel, Entry.ParseEnvironment()),
+            EnableRaisingEvents = true,
+        };
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) Enqueue(LogKind.Stdout, e.Data); };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Enqueue(LogKind.Stderr, e.Data); };
+        process.Exited += (_, _) => OnUpdateExited(process);
+
+        AppendSystem($"$ {command}    (update, in {Entry.WorkingDirectory}, via {shellLabel})");
+        try
+        {
+            process.Start();
+        }
+        catch (Exception ex)
+        {
+            AppendSystem($"Update failed to start: {ex.Message}");
+            process.Dispose();
+            return;
+        }
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        _updateProcess = process;
+        _flushTimer.Start(); // ensure output flushes even when the app itself is stopped
+        OnPropertyChanged(nameof(IsUpdating));
+    }
+
+    private void OnUpdateExited(Process process)
+    {
+        int code;
+        try { process.WaitForExit(2000); code = process.ExitCode; } catch { code = -1; }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            AppendSystem(code == 0 ? "Update finished." : $"Update exited with code {code}.");
+            FlushPending();
+            if (!IsRunning) _flushTimer.Stop();
+            _updateProcess = null;
+            OnPropertyChanged(nameof(IsUpdating));
+            process.Dispose();
+        });
     }
 
     /// <summary>Stops, waits for the process and its port to be released, then starts again.</summary>
@@ -312,6 +412,8 @@ public partial class ManagedApp : INotifyPropertyChanged
             _process = null;
             _exitCode = code;
             Pid = null;
+            Port = PortState.Stopped;
+            PortText = "stopped";
             Status = _stopRequested ? AppStatus.Stopped : code == 0 ? AppStatus.Exited : AppStatus.Crashed;
             AppendSystem(_stopRequested ? "Stopped." : $"Process exited with code {code}.");
             FlushPending();

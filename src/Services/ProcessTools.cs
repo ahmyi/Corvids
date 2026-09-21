@@ -49,6 +49,56 @@ public static class ProcessTools
 
     public static async Task<bool> IsPortListeningAsync(int port) => (await FindListenersAsync(port)).Count > 0;
 
+    /// <summary>Every listening TCP socket as (owning pid, port). Works on Windows (netstat), macOS/Linux (lsof).</summary>
+    public static async Task<List<(int Pid, int Port)>> ListeningPortsAsync()
+    {
+        var result = new List<(int, int)>();
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                foreach (var proto in new[] { "tcp", "tcpv6" })
+                {
+                    var output = await RunAsync("netstat", "-ano", "-p", proto);
+                    foreach (var line in output.Split('\n'))
+                    {
+                        var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length < 5 || parts[3] != "LISTENING") continue;
+                        if (PortOf(parts[1]) is { } port && int.TryParse(parts[4], out var pid))
+                            result.Add((pid, port));
+                    }
+                }
+            }
+            else
+            {
+                // lsof field output: "p<pid>" lines followed by "n<addr:port>" lines for that pid.
+                var output = await RunAsync("lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-FpPn");
+                var pid = 0;
+                foreach (var raw in output.Split('\n'))
+                {
+                    var line = raw.Trim();
+                    if (line.StartsWith('p')) int.TryParse(line[1..], out pid);
+                    else if (line.StartsWith('n') && pid != 0 && PortOf(line[1..]) is { } port)
+                        result.Add((pid, port));
+                }
+            }
+        }
+        catch
+        {
+            // netstat / lsof missing: report nothing rather than crash
+        }
+
+        return result;
+    }
+
+    /// <summary>Extracts the trailing port from an endpoint like "0.0.0.0:3000", "[::]:3000" or "*:8081".</summary>
+    private static int? PortOf(string endpoint)
+    {
+        var colon = endpoint.LastIndexOf(':');
+        if (colon < 0 || colon == endpoint.Length - 1) return null;
+        return int.TryParse(endpoint[(colon + 1)..], out var port) ? port : null;
+    }
+
     /// <summary>Waits until nothing listens on the port, up to the timeout. Returns true when free.</summary>
     public static async Task<bool> WaitForPortFreeAsync(int port, TimeSpan timeout)
     {

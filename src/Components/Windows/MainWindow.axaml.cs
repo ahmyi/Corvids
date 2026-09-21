@@ -22,6 +22,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _autoScroll = true;
     private bool _wrapLines;
     private bool _forceClose;
+    private int _portTick;
+    private bool _portScanBusy;
     private readonly DispatcherTimer _uptimeTimer;
 
     public new event PropertyChangedEventHandler? PropertyChanged;
@@ -32,6 +34,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public string VersionText =>
         $"Corvids v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "?"}";
+
+    /// <summary>Bottom status-bar text: how many apps are registered and running.</summary>
+    public string StatusSummary => Apps.Count == 0
+        ? "No apps"
+        : $"{Apps.Count(a => a.IsRunning)} of {Apps.Count} running";
 
     public ManagedApp? SelectedApp
     {
@@ -77,6 +84,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         DataContext = this;
 
         Settings = SettingsStore.Load();
+        TimeFormat.Pattern = Settings.TimestampFormat ?? TimeFormat.Default;
         ConfigStore.Configure(Settings.AppsFilePath);
         foreach (var entry in ConfigStore.Load()) AddManaged(entry);
         SelectedApp = Apps.FirstOrDefault();
@@ -89,7 +97,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Closing += OnClosing;
 
         _uptimeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _uptimeTimer.Tick += (_, _) => SelectedApp?.RefreshUptime();
+        _uptimeTimer.Tick += (_, _) =>
+        {
+            SelectedApp?.RefreshUptime();
+            if (++_portTick % 3 == 0) MonitorPorts(); // scan every ~3s; skipped if a scan is still running
+        };
         _uptimeTimer.Start();
 
         // Opened fires again every time the window is shown from the tray; the startup work must run once.
@@ -144,6 +156,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             existing.Entry.Name = entry.Name;
             existing.Entry.WorkingDirectory = entry.WorkingDirectory;
             existing.Entry.Command = entry.Command;
+            existing.Entry.UpdateCommand = entry.UpdateCommand;
             existing.Entry.AutoStart = entry.AutoStart;
             existing.Entry.AutoRestart = entry.AutoRestart;
             existing.Entry.Environment = entry.Environment;
@@ -173,6 +186,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var running = Apps.Count(a => a.IsRunning);
         Title = Apps.Count == 0 ? "Corvids" : $"Corvids - {running} of {Apps.Count} running";
         App.SetTrayToolTip(Title);
+        OnPropertyChanged(nameof(StatusSummary));
     }
 
     private async void AddApp_Click(object? sender, RoutedEventArgs e)
@@ -194,6 +208,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         app.Entry.Name = edited.Name;
         app.Entry.WorkingDirectory = edited.WorkingDirectory;
         app.Entry.Command = edited.Command;
+        app.Entry.UpdateCommand = edited.UpdateCommand;
         app.Entry.AutoStart = edited.AutoStart;
         app.Entry.AutoRestart = edited.AutoRestart;
         app.Entry.Environment = edited.Environment;
@@ -230,6 +245,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (SelectedApp is { } app) await app.RestartAsync();
     }
+
+    private void Update_Click(object? sender, RoutedEventArgs e) => SelectedApp?.RunUpdate();
 
     private void StartAll_Click(object? sender, RoutedEventArgs e)
     {
@@ -275,6 +292,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Settings = updated;
         SettingsStore.Save(Settings);
 
+        TimeFormat.Pattern = Settings.TimestampFormat ?? TimeFormat.Default;
+        RefreshLogTimestamps();
+
         ConfigStore.Configure(Settings.AppsFilePath);
         if (!string.Equals(previousFile, ConfigStore.Location, StringComparison.OrdinalIgnoreCase))
         {
@@ -284,6 +304,42 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(ConfigPath));
+    }
+
+    /// <summary>
+    /// One serialized pass: a single OS listener query maps to every running app, so all sidebar dots and the
+    /// status bar update together with no overlapping checks. Guarded so only one scan runs at a time.
+    /// </summary>
+    private async void MonitorPorts()
+    {
+        if (_portScanBusy) return; // never let a second scan start while one is in flight
+        if (Apps.All(a => !a.IsRunning)) return;
+
+        _portScanBusy = true;
+        try
+        {
+            var listeners = await ProcessTools.ListeningPortsAsync();
+            var byPid = listeners.ToLookup(l => l.Pid, l => l.Port);
+            foreach (var app in Apps)
+            {
+                if (!app.IsRunning) { app.SetPorts(Array.Empty<int>()); continue; }
+                var ports = app.ProcessIds.SelectMany(pid => byPid[pid]).Distinct().OrderBy(p => p).ToList();
+                app.SetPorts(ports);
+            }
+        }
+        finally
+        {
+            _portScanBusy = false;
+        }
+    }
+
+    /// <summary>Rebinds the log so already-rendered lines pick up a changed timestamp format.</summary>
+    private void RefreshLogTimestamps()
+    {
+        var app = SelectedApp;
+        if (app is null) return;
+        SelectedApp = null;
+        SelectedApp = app;
     }
 
     private void AppList_ContextRequested(object? sender, ContextRequestedEventArgs e)

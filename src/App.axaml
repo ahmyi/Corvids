@@ -15,6 +15,17 @@
       <Setter Property="Margin" Value="4,4,10,4" />
       <Setter Property="Background" Value="{DynamicResource DividerBrush}" />
     </Style>
+
+    <!-- Pulsing gray dot while the port check is in flight -->
+    <Style Selector="Ellipse.checking">
+      <Style.Animations>
+        <Animation Duration="0:0:0.9" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
   </Application.Styles>
 
   <Application.Resources>

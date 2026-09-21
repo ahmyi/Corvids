@@ -20,10 +20,17 @@ public enum ShellKind
 /// <summary>One registered Node.js application. Persisted to apps.json.</summary>
 public class AppEntry
 {
+    /// <summary>Default update command when none is set on the entry.</summary>
+    public const string DefaultUpdateCommand = "npm install";
+
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "";
     public string WorkingDirectory { get; set; } = "";
     public string Command { get; set; } = "";
+
+    /// <summary>Command run by the "Update" button, in the app's folder. Empty uses <see cref="DefaultUpdateCommand"/>.</summary>
+    public string? UpdateCommand { get; set; }
+
     public bool AutoStart { get; set; }
 
     /// <summary>Restart automatically after an unexpected exit (like pm2's autorestart).</summary>

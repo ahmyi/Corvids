@@ -59,6 +59,26 @@ public class ProcessToolsTests
         Assert.NotNull(ProcessTools.FindNodeProcesses());
     }
 
+    [Fact]
+    public async Task ListeningPortsAsync_reports_a_bound_socket_with_its_owning_pid()
+    {
+        if (!OperatingSystem.IsWindows()) return; // netstat -o gives pids on Windows; lsof may be absent elsewhere
+
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        try
+        {
+            var all = await ProcessTools.ListeningPortsAsync();
+            var mine = Process.GetCurrentProcess().Id;
+            Assert.Contains(all, x => x.Port == port && x.Pid == mine);
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
     private static int FreePort()
     {
         var l = new TcpListener(IPAddress.Loopback, 0);
