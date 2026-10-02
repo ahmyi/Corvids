@@ -159,6 +159,29 @@ An entry looks like this:
 `CustomShell` holds the full command line and `{cmd}` stands for the app command, e.g.
 `C:\msys64\usr\bin\bash.exe -lc "{cmd}"`. Set `CORVIDS_BASH` to point at a bash.exe in a non-standard place.
 
+## Control API (for AI agents and tools)
+
+Corvids can expose a local HTTP + JSON API so an agent or script can read and control your apps. Turn it on in
+**Settings** with **Enable local control**, then set the port and token on the line below it (the ⓘ button
+shows how to connect). It binds to `127.0.0.1` only, is off by default, and generates a bearer token the first
+time it's enabled. Every request needs `Authorization: Bearer <token>` (or `?token=`).
+
+| Method & path | Does |
+| --- | --- |
+| `GET /ping` | Liveness check |
+| `GET /apps` | List apps: status, running, pid, uptime, folder, command, ports |
+| `GET /apps/{id}` | One app, by id or name |
+| `GET /apps/{id}/logs?lines=N` | Recent log lines |
+| `POST /apps/{id}/start\|stop\|restart\|update` | Control the app |
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8750/apps
+curl -H "Authorization: Bearer <token>" --data "" http://127.0.0.1:8750/apps/api/restart
+```
+
+`POST` must carry a body or `Content-Length: 0` (the OS rejects a length-less POST with 411). This API is the
+backbone a future MCP server will wrap so Claude and similar agents get typed tools.
+
 ## Notes
 
 - Git Bash, bash and zsh are started as login shells (`-lc`) so PATH additions from nvm, volta or
