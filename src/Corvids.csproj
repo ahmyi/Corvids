@@ -11,7 +11,7 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>Corvids</AssemblyName>
     <RootNamespace>Corvids</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Authors>ahmyi</Authors>
     <Copyright>Copyright (C) 2026 ahmyi</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
