@@ -168,52 +168,6 @@ An entry looks like this:
 - Stop is a hard kill. Dev servers handle that fine; anything that needs a graceful shutdown should be
   stopped from its own UI first.
 
-## Project layout
-
-```
-Corvids.sln                            Solution: app + tests
-LICENSE                                GNU GPL v3.0
-README.md
-test.cmd / run-tests.sh                Run the test suite
-src/
-  Corvids.csproj
-  Program.cs                           Entry point
-  App.axaml(.cs)                       Avalonia bootstrap, theme, tray icon, splash launch
-  app.manifest
-  Assets/
-    icon.png                           Window / taskbar / splash icon
-    tray.png                           Bird-only tray icon
-  Components/
-    Converters.cs                      Status and log-kind colours
-    Windows/
-      MainWindow.axaml(.cs)            Sidebar, toolbar, log view, config reload
-      SplashWindow.axaml(.cs)          Launch splash and Settings ▸ About
-    Dialogs/
-      EntryDialog.axaml(.cs)           Add / edit an app
-      SettingsDialog.axaml(.cs)        Run at sign-in, start minimized, config location, terminal
-      ExitDialog.axaml(.cs)            Keep in tray / stop all on close
-      ConfirmDialog.axaml(.cs)         Yes/no prompt (Avalonia has no MessageBox)
-  Models/
-    AppEntry.cs                        Persisted entry, shell kind, env parsing
-    AppSettings.cs                     Persisted settings
-    LogLine.cs                         One console line
-  ViewModels/
-    ManagedApp.cs                      Process lifecycle, log buffer, port detection, auto-restart
-  Services/
-    Shell.cs                           Console detection, per-OS command lines, open terminal
-    JobObject.cs                       Windows job object for whole-tree kills
-    ProcessTools.cs                    Port lookup, node process discovery, kill helpers
-    ProcessCwd.cs                      Reads another process's working directory
-    ConfigStore.cs                     apps.json load/save/watch
-    SettingsStore.cs                   settings.json load/save
-    Autostart.cs                       Run key / LaunchAgent / XDG autostart
-    PackageJsonReader.cs               Script suggestions for the Add dialog
-tests/
-  Corvids.Tests/                       xUnit tests (env parsing, stores, shell, package.json)
-docs/                                  Logo source and screenshots
-dist/                                  Published builds (git-ignored)
-```
-
 ## License
 
 Corvids is free software, licensed under the **GNU General Public License v3.0 or later**. You may use,

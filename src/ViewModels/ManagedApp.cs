@@ -229,20 +229,57 @@ public partial class ManagedApp : INotifyPropertyChanged
     }
 
     private Process? _updateProcess;
+    private bool _updating;
 
-    /// <summary>True while the update command is running (disables the Update button).</summary>
-    public bool IsUpdating => _updateProcess is not null;
-
-    /// <summary>Runs the entry's update command (default "npm install") in the app folder, logging its output.</summary>
-    public void RunUpdate()
+    /// <summary>True for the whole update flow (stop, update, restart); disables the Update button.</summary>
+    public bool IsUpdating
     {
-        if (_updateProcess is not null) { AppendSystem("Update is already running."); return; }
+        get => _updating;
+        private set { if (_updating == value) return; _updating = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>
+    /// Runs the entry's update command (default "npm install") in the app folder. If the app is running it is
+    /// stopped first and started again once the update finishes; a stopped app is left stopped.
+    /// </summary>
+    public async Task RunUpdateAsync()
+    {
+        if (IsUpdating) { AppendSystem("Update is already running."); return; }
         if (!Directory.Exists(Entry.WorkingDirectory))
         {
             AppendSystem($"Working directory not found: {Entry.WorkingDirectory}");
             return;
         }
 
+        IsUpdating = true;
+        try
+        {
+            var wasRunning = IsRunning;
+            if (wasRunning)
+            {
+                AppendSystem("Stopping before update…");
+                Stop();
+                await WaitForExitAsync(TimeSpan.FromSeconds(10));
+            }
+
+            var code = await RunUpdateProcessAsync();
+            AppendSystem(code == 0 ? "Update finished." : $"Update exited with code {code}.");
+
+            if (wasRunning)
+            {
+                AppendSystem("Restarting after update…");
+                Start();
+            }
+        }
+        finally
+        {
+            IsUpdating = false;
+        }
+    }
+
+    private Task<int> RunUpdateProcessAsync()
+    {
+        var tcs = new TaskCompletionSource<int>();
         var command = string.IsNullOrWhiteSpace(Entry.UpdateCommand) ? AppEntry.DefaultUpdateCommand : Entry.UpdateCommand;
         var process = new Process
         {
@@ -252,7 +289,19 @@ public partial class ManagedApp : INotifyPropertyChanged
         };
         process.OutputDataReceived += (_, e) => { if (e.Data is not null) Enqueue(LogKind.Stdout, e.Data); };
         process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Enqueue(LogKind.Stderr, e.Data); };
-        process.Exited += (_, _) => OnUpdateExited(process);
+        process.Exited += (_, _) =>
+        {
+            int code;
+            try { process.WaitForExit(2000); code = process.ExitCode; } catch { code = -1; }
+            Dispatcher.UIThread.Post(() =>
+            {
+                FlushPending();
+                if (!IsRunning) _flushTimer.Stop();
+                _updateProcess = null;
+                process.Dispose();
+                tcs.TrySetResult(code);
+            });
+        };
 
         AppendSystem($"$ {command}    (update, in {Entry.WorkingDirectory}, via {shellLabel})");
         try
@@ -263,30 +312,15 @@ public partial class ManagedApp : INotifyPropertyChanged
         {
             AppendSystem($"Update failed to start: {ex.Message}");
             process.Dispose();
-            return;
+            tcs.TrySetResult(-1);
+            return tcs.Task;
         }
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         _updateProcess = process;
-        _flushTimer.Start(); // ensure output flushes even when the app itself is stopped
-        OnPropertyChanged(nameof(IsUpdating));
-    }
-
-    private void OnUpdateExited(Process process)
-    {
-        int code;
-        try { process.WaitForExit(2000); code = process.ExitCode; } catch { code = -1; }
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            AppendSystem(code == 0 ? "Update finished." : $"Update exited with code {code}.");
-            FlushPending();
-            if (!IsRunning) _flushTimer.Stop();
-            _updateProcess = null;
-            OnPropertyChanged(nameof(IsUpdating));
-            process.Dispose();
-        });
+        _flushTimer.Start(); // ensure output flushes even while the app itself is stopped
+        return tcs.Task;
     }
 
     /// <summary>Stops, waits for the process and its port to be released, then starts again.</summary>

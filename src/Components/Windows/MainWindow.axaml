@@ -51,7 +51,7 @@
       </StackPanel>
 
       <ListBox x:Name="AppList" ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp}"
-               Background="Transparent" Margin="6,0">
+               AutoScrollToSelectedItem="False" Background="Transparent" Margin="6,0">
         <ListBox.ContextMenu>
           <ContextMenu>
             <MenuItem Header="Start" Click="Start_Click" IsEnabled="{Binding !SelectedApp.IsRunning}" />
@@ -148,7 +148,7 @@
       </WrapPanel>
 
       <ListBox x:Name="LogList" Grid.Row="3" ItemsSource="{Binding SelectedApp.Lines}"
-               SelectionMode="Multiple" Background="{DynamicResource LogBrush}"
+               SelectionMode="Multiple" AutoScrollToSelectedItem="False" Background="{DynamicResource LogBrush}"
                FontFamily="{StaticResource MonoFont}" FontSize="12" Padding="0,2,0,12"
                ScrollViewer.HorizontalScrollBarVisibility="{Binding LogHorizontalScroll}">
         <ListBox.Styles>

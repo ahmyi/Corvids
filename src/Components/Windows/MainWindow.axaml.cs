@@ -246,7 +246,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (SelectedApp is { } app) await app.RestartAsync();
     }
 
-    private void Update_Click(object? sender, RoutedEventArgs e) => SelectedApp?.RunUpdate();
+    private async void Update_Click(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedApp is { } app) await app.RunUpdateAsync();
+    }
 
     private void StartAll_Click(object? sender, RoutedEventArgs e)
     {
@@ -412,14 +415,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ScrollToEnd()
     {
-        if (!AutoScroll || LogList.ItemCount == 0) return;
+        // Skip while hidden (tray) or unmeasured: ScrollIntoView then arranges an invalid rect and throws.
+        if (!AutoScroll || LogList.ItemCount == 0 || !IsVisible || LogList.Bounds.Height <= 0) return;
 
-        // ScrollIntoView on a line wider than the viewport also nudges the view sideways, which slowly
-        // hides the timestamp column. Keep whatever horizontal position the user had.
-        var horizontal = LogList.Scroll?.Offset.X ?? 0;
-        LogList.ScrollIntoView(LogList.ItemCount - 1);
-        if (LogList.Scroll is { } scroll && scroll.Offset.X != horizontal)
-            scroll.Offset = new Avalonia.Vector(horizontal, scroll.Offset.Y);
+        try
+        {
+            // ScrollIntoView on a line wider than the viewport also nudges the view sideways, which slowly
+            // hides the timestamp column. Keep whatever horizontal position the user had.
+            var horizontal = LogList.Scroll?.Offset.X ?? 0;
+            LogList.ScrollIntoView(LogList.ItemCount - 1);
+            if (LogList.Scroll is { } scroll && scroll.Offset.X != horizontal)
+                scroll.Offset = new Avalonia.Vector(horizontal, scroll.Offset.Y);
+        }
+        catch
+        {
+            // A transient Avalonia layout hiccup during rapid updates must never crash the app.
+        }
     }
 
     /// <summary>Scrolling up by hand pauses auto-scroll; returning to the bottom resumes it.</summary>
