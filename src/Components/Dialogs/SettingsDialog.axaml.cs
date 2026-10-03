@@ -38,6 +38,38 @@ public partial class SettingsDialog : Window
         TimestampLegend.Text = BuildLegend();
         TimestampBox.TextChanged += (_, _) => UpdateTimestampPreview();
         UpdateTimestampPreview();
+
+        ControlApiBox.IsChecked = current.ControlApiEnabled;
+        ControlPortBox.Text = current.ControlApiPort.ToString();
+        ControlTokenBox.Text = current.ControlApiToken;
+    }
+
+    private void RegenerateToken_Click(object? sender, RoutedEventArgs e) =>
+        ControlTokenBox.Text = Guid.NewGuid().ToString("N");
+
+    private async void ControlInfo_Click(object? sender, RoutedEventArgs e)
+    {
+        var port = int.TryParse(ControlPortBox.Text, out var p) && p is > 0 and < 65536 ? p : 8750;
+        var token = string.IsNullOrWhiteSpace(ControlTokenBox.Text) ? "<generated when you enable and save>"
+            : ControlTokenBox.Text.Trim();
+        var baseUrl = $"http://127.0.0.1:{port}";
+
+        var message =
+            "Enable local control, then connect over loopback HTTP. Every request needs the token.\n\n" +
+            $"Base URL:  {baseUrl}\n" +
+            $"Header:    Authorization: Bearer {token}\n\n" +
+            "Endpoints:\n" +
+            "  GET  /ping\n" +
+            "  GET  /apps\n" +
+            "  GET  /apps/{id-or-name}\n" +
+            "  GET  /apps/{id-or-name}/logs?lines=N\n" +
+            "  POST /apps/{id-or-name}/start | stop | restart | update\n\n" +
+            "Examples:\n" +
+            $"  curl -H \"Authorization: Bearer {token}\" {baseUrl}/apps\n" +
+            $"  curl -H \"Authorization: Bearer {token}\" --data \"\" {baseUrl}/apps/api/restart\n\n" +
+            "A POST needs a body or Content-Length: 0 (the OS rejects a length-less POST with 411).";
+
+        await ConfirmDialog.ShowAsync(this, "How to connect", message, "OK");
     }
 
     private void UpdateTimestampPreview()
@@ -110,6 +142,17 @@ public partial class SettingsDialog : Window
         var isDefault = string.IsNullOrEmpty(appsFile) ||
             string.Equals(Path.GetFullPath(appsFile), Path.GetFullPath(defaultFile), StringComparison.OrdinalIgnoreCase);
 
+        var apiEnabled = ControlApiBox.IsChecked == true;
+        if (!int.TryParse(ControlPortBox.Text, out var apiPort) || apiPort is < 1 or > 65535)
+        {
+            ShowError("The control API port must be between 1 and 65535.");
+            return;
+        }
+
+        // Generate a token the first time the API is turned on.
+        var token = string.IsNullOrWhiteSpace(ControlTokenBox.Text) ? null : ControlTokenBox.Text.Trim();
+        if (apiEnabled && token is null) token = Guid.NewGuid().ToString("N");
+
         Close(new AppSettings
         {
             RunAtStartup = runAtStartup,
@@ -117,6 +160,9 @@ public partial class SettingsDialog : Window
             AppsFilePath = isDefault ? null : Path.GetFullPath(appsFile!),
             TerminalCommand = string.IsNullOrWhiteSpace(TerminalBox.Text) ? null : TerminalBox.Text.Trim(),
             TimestampFormat = string.IsNullOrWhiteSpace(TimestampBox.Text) ? null : TimestampBox.Text.Trim(),
+            ControlApiEnabled = apiEnabled,
+            ControlApiPort = apiPort,
+            ControlApiToken = token,
         });
     }
 

@@ -41,6 +41,23 @@
       </Border>
     </StackPanel>
 
+    <StackPanel Spacing="6">
+      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <CheckBox x:Name="ControlApiBox" Content="Enable local control"
+                  ToolTip.Tip="A loopback HTTP API on 127.0.0.1, guarded by a token. Lets agents/tools list and control apps." />
+        <Button Content="ⓘ" Click="ControlInfo_Click" Padding="6,2" VerticalAlignment="Center"
+                ToolTip.Tip="How to connect" />
+      </StackPanel>
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="28,0,0,0" ColumnSpacing="8"
+            IsEnabled="{Binding #ControlApiBox.IsChecked}">
+        <TextBlock Text="Port" Opacity="0.7" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" x:Name="ControlPortBox" Width="72" FontFamily="{StaticResource MonoFont}" />
+        <TextBlock Grid.Column="2" Text="Token" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
+        <TextBox Grid.Column="3" x:Name="ControlTokenBox" FontFamily="{StaticResource MonoFont}" IsReadOnly="True" />
+        <Button Grid.Column="4" Content="Generate" Click="RegenerateToken_Click" />
+      </Grid>
+    </StackPanel>
+
     <TextBlock x:Name="ErrorText" Foreground="#F87171" IsVisible="False" TextWrapping="Wrap" />
 
     <DockPanel>

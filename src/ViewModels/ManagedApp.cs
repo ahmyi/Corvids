@@ -88,13 +88,27 @@ public partial class ManagedApp : INotifyPropertyChanged
         private set { if (_portText == value) return; _portText = value; OnPropertyChanged(); }
     }
 
+    /// <summary>Listening port numbers from the last scan (empty when none or stopped).</summary>
+    public IReadOnlyList<int> Ports { get; private set; } = Array.Empty<int>();
+
     /// <summary>Called by the monitor with the freshly scanned ports for this app.</summary>
     public void SetPorts(IReadOnlyList<int> ports)
     {
+        Ports = !IsRunning ? Array.Empty<int>() : ports;
         if (!IsRunning) { Port = PortState.Stopped; PortText = "stopped"; return; }
         if (ports.Count == 0) { Port = PortState.NoPort; PortText = "no port"; return; }
         Port = PortState.Open;
         PortText = ports.Count == 1 ? $"port {ports[0]}" : "ports " + string.Join(", ", ports);
+    }
+
+    /// <summary>A snapshot of recent log lines (oldest first), for the control API.</summary>
+    public IReadOnlyList<string> RecentLogLines(int count)
+    {
+        var total = Lines.Count;
+        var take = count <= 0 || count > total ? total : count;
+        var result = new List<string>(take);
+        for (var i = total - take; i < total; i++) result.Add($"{Lines[i].TimeText}  {Lines[i].Text}");
+        return result;
     }
 
     /// <summary>PIDs owned by this app: the whole job tree on Windows, otherwise the root process.</summary>

@@ -16,7 +16,7 @@ using Corvids.ViewModels;
 
 namespace Corvids;
 
-public partial class MainWindow : Window, INotifyPropertyChanged
+public partial class MainWindow : Window, INotifyPropertyChanged, IControlHost
 {
     private ManagedApp? _selectedApp;
     private bool _autoScroll = true;
@@ -25,6 +25,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int _portTick;
     private bool _portScanBusy;
     private readonly DispatcherTimer _uptimeTimer;
+    private readonly ControlServer _control;
 
     public new event PropertyChangedEventHandler? PropertyChanged;
 
@@ -103,6 +104,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (++_portTick % 3 == 0) MonitorPorts(); // scan every ~3s; skipped if a scan is still running
         };
         _uptimeTimer.Start();
+
+        _control = new ControlServer(this);
+        ApplyControlApi();
 
         // Opened fires again every time the window is shown from the tray; the startup work must run once.
         var startedUp = false;
@@ -307,6 +311,52 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(ConfigPath));
+        ApplyControlApi();
+    }
+
+    // Control API (loopback HTTP, for AI agents and other tools)
+
+    private void ApplyControlApi()
+    {
+        if (Settings.ControlApiEnabled && !string.IsNullOrEmpty(Settings.ControlApiToken))
+            _control.Start(Settings.ControlApiPort, Settings.ControlApiToken);
+        else
+            _control.Stop();
+    }
+
+    private ManagedApp? FindApp(string idOrName) =>
+        Apps.FirstOrDefault(a => a.Entry.Id.ToString() == idOrName) ??
+        Apps.FirstOrDefault(a => string.Equals(a.Name, idOrName, StringComparison.OrdinalIgnoreCase));
+
+    private static AppDto ToDto(ManagedApp a) => new(
+        a.Entry.Id.ToString(), a.Name, a.Status.ToString(), a.IsRunning, a.Pid, a.Uptime,
+        a.WorkingDirectory, a.Command, a.PortText, a.Ports.ToArray());
+
+    public Task<IReadOnlyList<AppDto>> ListAsync() =>
+        Dispatcher.UIThread.InvokeAsync(() => (IReadOnlyList<AppDto>)Apps.Select(ToDto).ToList()).GetTask();
+
+    public Task<AppDto?> GetAsync(string id) =>
+        Dispatcher.UIThread.InvokeAsync(() => FindApp(id) is { } a ? ToDto(a) : null).GetTask();
+
+    public Task<LogsDto?> LogsAsync(string id, int lines) =>
+        Dispatcher.UIThread.InvokeAsync(() => FindApp(id) is { } a
+            ? new LogsDto(a.Entry.Id.ToString(), a.Name, a.RecentLogLines(lines).ToArray())
+            : null).GetTask();
+
+    public Task<ActionResult> ActionAsync(string id, string action) =>
+        Dispatcher.UIThread.InvokeAsync(() => PerformActionAsync(id, action));
+
+    private async Task<ActionResult> PerformActionAsync(string id, string action)
+    {
+        if (FindApp(id) is not { } app) return new ActionResult(false, "no such app");
+        switch (action)
+        {
+            case "start": app.Start(); return new ActionResult(true, $"{app.Name} starting");
+            case "stop": app.Stop(); return new ActionResult(true, $"{app.Name} stopping");
+            case "restart": await app.RestartAsync(); return new ActionResult(true, $"{app.Name} restarted");
+            case "update": await app.RunUpdateAsync(); return new ActionResult(true, $"{app.Name} updated");
+            default: return new ActionResult(false, $"unknown action: {action}");
+        }
     }
 
     /// <summary>
@@ -480,6 +530,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public void StopAllAndExit()
     {
+        _control.Stop();
         foreach (var app in Apps.Where(a => a.IsRunning)) app.Stop();
         _forceClose = true;
         Close();
